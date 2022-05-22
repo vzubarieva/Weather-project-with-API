@@ -2,30 +2,40 @@ import $ from 'jquery';
 import 'bootstrap';
 import 'bootstrap/dist/css/bootstrap.min.css';
 import './css/styles.css';
+import WeatherService from './weather-service.js'
+
+
+function clearFields() {
+  $('#location').val("");
+  $('.showErrors').text("");
+  $('.showHumidity').text("");
+  $('.showTemp').text("");
+  $('.showWind').text("");
+
+}
 
 $(document).ready(function () {
   $('#weatherLocation').click(function () {
-    const city = $('#location').val();
-    $('#location').val("");
-
-    let request = new XMLHttpRequest();
-    const url = `http://api.openweathermap.org/data/2.5/weather?q=${city}&appid=${process.env.API_KEY}`;
+    let city = $('#location').val();
+    clearFields();
+    let promise = WeatherService.getWeather(city);
 
 
-    request.onreadystatechange = function () {
-      if (this.readyState === 4 && this.status === 200) {
-        const response = JSON.parse(this.responseText);
-        getElements(response);
-      }
-    };
-
-    request.open("GET", url, true);
-    request.send();
-
-    function getElements(response) {
-      $('.showHumidity').text(`The humidity in ${city} is ${response.main.humidity}%`);
-      $('.showTemp').text(`The temperature in Kelvins is ${response.main.temp} degrees.`);
+    function convertToF(kelvin) {
+      let fahrenheit = ((kelvin - 273.15) * 1.8) + 32;
+      return fahrenheit;
     }
+
+
+
+    promise.then(function (response) {
+      const body = JSON.parse(response);
+      $('.showHumidity').text(`The humidity in ${city} is ${body.main.humidity}%`);
+      $('.showTemp').text(`The temperature in F is ${convertToF(body.main.temp)} degrees.`);
+      $('.showWind').text(`Wind is ${body.wind.speed} mph.`);
+    }, function (error) {
+      $('.showErrors').text(`There was an error processing your request: ${error}`);
+    });
   });
 });
 
